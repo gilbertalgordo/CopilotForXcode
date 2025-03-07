@@ -1,0 +1,36 @@
+import UIKit
+
+class ViewController: UIViewController {
+    let updateManager = UpdateManager()
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        checkForUpdates()
+    }
+
+    private func checkForUpdates() {
+        updateManager.checkForUpdate { [weak self] isUpdateAvailable, releaseNotes, downloadURL in
+            guard let self = self, isUpdateAvailable, let downloadURL = downloadURL else { return }
+            
+            DispatchQueue.main.async {
+                self.showUpdateAlert(releaseNotes: releaseNotes, updateURL: downloadURL)
+            }
+        }
+    }
+
+    private func showUpdateAlert(releaseNotes: String?, updateURL: String) {
+        let alert = UIAlertController(title: "Update Available",
+                                      message: releaseNotes ?? "A new version is available.",
+                                      preferredStyle: .alert)
+
+        alert.addAction(UIAlertAction(title: "Update", style: .default, handler: { _ in
+            if let url = URL(string: updateURL) {
+                UIApplication.shared.open(url)
+            }
+        }))
+
+        alert.addAction(UIAlertAction(title: "Later", style: .cancel, handler: nil))
+
+        present(alert, animated: true)
+    }
+}
