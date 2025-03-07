@@ -1,0 +1,39 @@
+import UIKit
+
+class UpdateManager {
+    private let updateURL = URL(string: "https://example.com/path/to/update.json")! // Replace with your URL
+
+    func checkForUpdate(completion: @escaping (Bool, String?, String?) -> Void) {
+        let task = URLSession.shared.dataTask(with: updateURL) { data, _, error in
+            guard let data = data, error == nil else {
+                print("Error fetching update info: \(error?.localizedDescription ?? "Unknown error")")
+                completion(false, nil, nil)
+                return
+            }
+
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                   let latestVersion = json["version"] as? String {
+                    
+                    let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+                    
+                    if let currentVersion = currentVersion, self.isNewVersionAvailable(currentVersion, latestVersion) {
+                        let releaseNotes = json["releaseNotes"] as? String
+                        let downloadURL = json["downloadURL"] as? String // URL to App Store or direct download
+                        completion(true, releaseNotes, downloadURL)
+                    } else {
+                        completion(false, nil, nil)
+                    }
+                }
+            } catch {
+                print("JSON Parsing error: \(error)")
+                completion(false, nil, nil)
+            }
+        }
+        task.resume()
+    }
+
+    private func isNewVersionAvailable(_ currentVersion: String, _ latestVersion: String) -> Bool {
+        return currentVersion.compare(latestVersion, options: .numeric) == .orderedAscending
+    }
+}
